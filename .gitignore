@@ -1,0 +1,17 @@
+# --- secrets ---------------------------------------------------------------
+.env
+
+# --- unrelated iOS app living in this same folder --------------------------
+LocalAILearningApp/
+LocalAILearningApp.xcodeproj/
+project.yml
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# --- macOS / editor --------------------------------------------------------
+.DS_Store
+node_modules/
+
+# --- bot output ------------------------------------------------------------
+tools/prices.log

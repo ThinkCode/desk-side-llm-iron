@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Desk-side LLM Iron — 2026</title>
+<style>
+  /* ---------- DARK (default) ---------- */
+  :root {
+    --bg:#07080c; --bodybg: radial-gradient(1100px 620px at 8% -12%, #16344c 0%, transparent 55%),
+                            radial-gradient(900px 500px at 95% 0%, #2a1840 0%, transparent 50%), #07080c;
+    --panel:#10131a; --wrapbg:#0c1017; --thbg:#121826; --rowhover:#151d2b;
+    --line:#1e2430; --line2:#3b4658; --track:#1b2433;
+    --text:#e8edf5; --text2:#c9d3e2; --thfg:#b7c2d3; --muted:#8b96a8; --faint:#6d798c;
+    --accent:#3ee0ff; --accent2:#a76bff; --good:#5dffb1; --warn:#ffd36a; --bad:#ff6b8a;
+    --cyan:#3ee0ff; --chip:#1a2230; --chipon:#123445;
+    --barfill: linear-gradient(90deg,#2aa8ff,#3ee0ff);
+    --grid:#161d29; --iso:#233043; --isofg:#3c4a60;
+    --tipbg:#161d2b; --tipline:#2b3648;
+    --buybg:#2a2213; --buyline:#5a4a1e; --buyfg:#ffb84d;
+    --v-nvidia:#76b900; --v-amd:#ff4d6d; --v-intel:#2fc6ff; --v-apple:#e6eaf0; --v-other:#c8b46a;
+    --font: ui-sans-serif, system-ui, Inter, sans-serif;
+    --glow: 0 0 22px #3ee0ff30;
+    --icfilter: none;
+  }
+  /* ---------- LIGHT ---------- */
+  :root[data-theme="light"] {
+    --bg:#f4f6fa; --bodybg: radial-gradient(1100px 620px at 8% -12%, #d8e9ff 0%, transparent 55%),
+                            radial-gradient(900px 500px at 95% 0%, #efe2ff 0%, transparent 50%), #f4f6fa;
+    --panel:#ffffff; --wrapbg:#ffffff; --thbg:#eef2f8; --rowhover:#f2f6fd;
+    --line:#dde3ec; --line2:#b6c1d2; --track:#e6ebf3;
+    --text:#101827; --text2:#33415a; --thfg:#475069; --muted:#6b7688; --faint:#8b95a6;
+    --accent:#0a84c9; --accent2:#7a3ff2; --good:#0f9d58; --warn:#a5720a; --bad:#d92d4b;
+    --cyan:#0a84c9; --chip:#eef2f8; --chipon:#dceeff;
+    --barfill: linear-gradient(90deg,#69b7ff,#0a84c9);
+    --grid:#e8edf4; --iso:#d9e2ee; --isofg:#a9b6c7;
+    --tipbg:#ffffff; --tipline:#c9d4e2;
+    --buybg:#fff4e0; --buyline:#e0b062; --buyfg:#8a5a00;
+    --v-nvidia:#5f9400; --v-amd:#d92d4b; --v-intel:#0a84c9; --v-apple:#7c8899; --v-other:#a8892f;
+    --glow: 0 0 0 transparent;
+    --icfilter: none;
+  }
+  /* ---------- MATRIX ---------- */
+  :root[data-theme="matrix"] {
+    --bg:#000400; --bodybg:#000400;
+    --panel:#02120a; --wrapbg:#010b06; --thbg:#03180e; --rowhover:#052a16;
+    --line:#0d3b22; --line2:#1c6b3d; --track:#072b16;
+    --text:#8cffb0; --text2:#4dff88; --thfg:#39ff6a; --muted:#2f9c56; --faint:#1f6e3c;
+    --accent:#39ff6a; --accent2:#00ffa8; --good:#39ff6a; --warn:#d4ff3a; --bad:#ff4d4d;
+    --cyan:#39ff6a; --chip:#062615; --chipon:#0b4f28;
+    --barfill: linear-gradient(90deg,#0b7a3a,#39ff6a);
+    --grid:#0b2c19; --iso:#124b2a; --isofg:#1c7440;
+    --tipbg:#02170d; --tipline:#1c6b3d;
+    --buybg:#052415; --buyline:#2a8f4d; --buyfg:#7dff9e;
+    --v-nvidia:#76b900; --v-amd:#ff4d6d; --v-intel:#2fc6ff; --v-apple:#e6eaf0; --v-other:#c8b46a;
+    --font: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    --glow: 0 0 26px #39ff6a44;
+    --icfilter: none;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font);
+    background: var(--bodybg); background-attachment: fixed;
+    color: var(--text); min-height: 100vh;
+    transition: background .35s ease, color .35s ease;
+  }
+  header { padding: 28px 24px 8px; max-width: 1320px; margin: 0 auto; }
+  h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.04em; }
+  h1 span { background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: var(--muted); max-width: 760px; line-height: 1.45; }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    max-width: 1320px; margin: 16px auto 0; padding: 0 24px;
+  }
+  .controls label { color: var(--muted); font-size: 12px; margin-right: -4px; }
+  input, select, button {
+    background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 12px; font: inherit;
+  }
+  input { min-width: 200px; }
+  button { cursor: pointer; }
+  .chip { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--chip); cursor: pointer; font-size: 13px; }
+  .chip.active { background: var(--chipon); border-color: var(--accent); color: var(--accent); box-shadow: var(--glow); }
+  .layout { max-width: 1320px; margin: 0 auto; padding: 8px 24px 48px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 18px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+    transition: transform .2s, border-color .2s; }
+  .kpi:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .kpi b { display: block; font-size: 20px; letter-spacing: -0.02em; }
+  .kpi span { color: var(--muted); font-size: 12px; }
+  .wrap { overflow: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--wrapbg); }
+  table { width: 100%; border-collapse: collapse; min-width: 980px; }
+  th, td { padding: 10px 10px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--thbg); cursor: pointer; color: var(--thfg); z-index: 2; }
+  th:hover { color: var(--accent); }
+  tr:hover td { background: var(--rowhover); }
+  tr.star td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  tr.nofit td { opacity: 0.55; }
+  .bar { height: 6px; border-radius: 99px; background: var(--track); width: 74px; display: inline-block; vertical-align: middle; margin-left: 8px; }
+  .bar > i { display: block; height: 100%; border-radius: 99px; background: var(--barfill); transition: width .45s cubic-bezier(.2,.8,.2,1); }
+  .fit-yes { color: var(--good); } .fit-no { color: var(--bad); } .fit-mid { color: var(--warn); }
+  .rnote { color: var(--muted); font-size: 11px; }
+  th u { text-decoration: none; color: var(--faint); font-weight: 400; font-size: 10px; }
+  td:nth-child(n+4):nth-child(-n+11), th:nth-child(n+4):nth-child(-n+11) { text-align: right; }
+  .bar { width: 44px; }
+  td:last-child, th:last-child { width: 92px; text-align: center; }
+  th .admark { margin-left: 0; display: block; margin-top: 3px; }
+  .livedot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 99px; margin-left: 4px;
+    background: var(--good); box-shadow: 0 0 6px var(--good); vertical-align: middle;
+  }
+  #pricestamp { margin-left: 8px; font-size: 11px; color: var(--faint); }
+  #pricestamp.live { color: var(--good); }
+  #pricestamp.stale { color: var(--warn); }
+  .keyi { font-size: 13px; margin-right: 2px; }
+  .keyi.amz { color: var(--buyfg); }
+  .keyi.ven { color: var(--muted); }
+  .themebar { display: flex; gap: 6px; }
+  #pricestamp { margin-left: auto; }
+  .themebar button {
+    padding: 8px 12px; border-radius: 999px; font-size: 12px; background: var(--chip);
+    border: 1px solid var(--line); color: var(--muted); cursor: pointer;
+  }
+  .themebar button.on { background: var(--chipon); border-color: var(--accent); color: var(--accent); box-shadow: var(--glow); }
+  #rain { position: fixed; inset: 0; z-index: -1; pointer-events: none; display: none; opacity: .45; }
+  :root[data-theme="matrix"] #rain { display: block; }
+  :root[data-theme="matrix"] h1 { text-shadow: 0 0 18px #39ff6a66; }
+  :root[data-theme="matrix"] .kpi b { text-shadow: 0 0 14px #39ff6a55; }
+  :root[data-theme="matrix"] th { text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  .crown {
+    display: inline-block; margin-left: 7px; padding: 1px 7px; border-radius: 999px;
+    font-size: 9.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--bg); background: linear-gradient(90deg, var(--warn), var(--accent));
+    box-shadow: var(--glow);
+    vertical-align: middle; white-space: nowrap;
+  }
+  .namelink {
+    font-weight: 700; color: var(--text); text-decoration: none;
+    border-bottom: 1px dotted var(--line2);
+  }
+  .namelink:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .mach { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .mach > div { min-width: 0; }
+  td:first-child, th:first-child { max-width: 230px; width: 230px; }
+  .namelink { display: inline-block; max-width: 158px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+  .rnote { max-width: 192px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ic { flex: 0 0 auto; width: 36px; height: 28px; display: block; filter: var(--icfilter); }
+  .buyi {
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    width: 34px; height: 34px; border-radius: 9px; text-decoration: none;
+    background: var(--buybg); border: 1px solid var(--buyline); color: var(--buyfg);
+    transition: transform .15s, box-shadow .15s, border-color .15s;
+  }
+  .buyi.wide { width: auto; padding: 0 9px; }
+  .buyi.wide span { font-size: 11.5px; font-weight: 600; letter-spacing: -.01em; }
+  .buyi:hover { transform: translateY(-1px); box-shadow: var(--glow); filter: brightness(1.2); }
+  .buyi.vendor, .buyi.search { background: var(--chip); border-color: var(--line); color: var(--muted); }
+  .buyi.vendor:hover, .buyi.search:hover { border-color: var(--accent); color: var(--accent); }
+  .cfgnote { color: var(--faint); font-size: 10px; margin-top: 3px; }
+  .disclosure {
+    margin: 26px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line);
+    color: var(--faint); font-size: 11px; line-height: 1.6;
+  }
+  .disclosure p { margin: 0 0 7px; }
+  .disclosure strong { color: var(--muted); font-weight: 600; }
+  .admark {
+    display: inline-block; font-size: 9px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--buyfg); background: var(--buybg); border: 1px solid var(--buyline);
+    border-radius: 4px; padding: 1px 5px; vertical-align: middle; font-weight: 500;
+  }
+  th .admark { margin-left: 6px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.6; }
+  .note b { color: var(--thfg); font-weight: 600; }
+  .plotbox { position: relative; margin-top: 18px; }
+  canvas { width: 100%; height: 420px; background: var(--wrapbg); border: 1px solid var(--line); border-radius: 16px; display: block; }
+  #tip {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--tipbg); border: 1px solid var(--tipline);
+    border-radius: 10px; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+    box-shadow: 0 8px 24px #0009; max-width: 240px; z-index: 5;
+  }
+  #tip b { display: block; margin-bottom: 3px; font-size: 13px; }
+  #tip i { color: var(--muted); font-style: normal; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 12px; margin-top: 10px; align-items: center; }
+  .legend em { font-style: normal; display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 99px; display: inline-block;
+    box-shadow: 0 0 0 1px var(--line); }
+  details { margin-top: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 12px 14px; }
+  summary { cursor: pointer; color: var(--thfg); font-size: 13px; }
+  details .note { margin-top: 10px; }
+  @media (max-width: 800px) { .kpis { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+<header>
+  <h1>Desk-side LLM iron <span>2026</span></h1>
+  <p class="sub">Pick a model, see which desk-side machines can actually hold it and how fast they decode.
+  Throughput is derived from memory bandwidth and compute, not typed in by hand — the formula is at the
+  bottom and is calibrated against published measurements. Click headers to sort.</p>
+</header>
+
+<div class="controls">
+  <label for="model">Workload</label>
+  <select id="model"></select>
+  <input id="q" placeholder="Filter machines…" />
+  <button class="chip active" data-f="all">All</button>
+  <button class="chip" data-f="fit">Fits the model</button>
+  <button class="chip" data-f="quiet">Quiet desk</button>
+  <button class="chip" data-f="cheap">Under $3k</button>
+  <span id="pricestamp">static prices &middot; 31 Aug 2026</span>
+  <div class="themebar" role="group" aria-label="Theme">
+    <button data-theme="dark"   title="Dark">◐ Dark</button>
+    <button data-theme="light"  title="Light">☀ Light</button>
+    <button data-theme="matrix" title="Matrix">▓ Matrix</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="kpis" id="kpis"></div>
+  <div class="wrap"><table><thead></thead><tbody></tbody></table></div>
+
+  <div class="controls" style="padding:0;margin:18px 0 0">
+    <label for="ymetric">Chart Y axis</label>
+    <select id="ymetric">
+      <option value="decode">Decode tok/s (single stream)</option>
+      <option value="batch">Batch-8 aggregate tok/s</option>
+      <option value="prefill">Prefill tok/s</option>
+      <option value="perfW">Decode tok/s per 100 W</option>
+    </select>
+    <button class="chip active" id="isoBtn">Show $/tok/s guides</button>
+  </div>
+
+  <div class="plotbox">
+    <canvas id="plot"></canvas>
+    <div id="tip"></div>
+  </div>
+  <div class="legend">
+    <em><span class="dot" style="background:var(--v-nvidia)"></span>NVIDIA</em>
+    <em><span class="dot" style="background:var(--v-amd)"></span>AMD</em>
+    <em><span class="dot" style="background:var(--v-intel)"></span>Intel</em>
+    <em><span class="dot" style="background:var(--v-apple)"></span>Apple</em>
+    <em><span class="dot" style="background:var(--v-other)"></span>Other</em>
+    <em>· hollow = model doesn't fit</em>
+    <em>· bubble size = memory capacity</em>
+    <em>· both axes log</em>
+  </div>
+
+  <div class="legend" style="margin-top:6px">
+    <em><span class="keyi amz">\u25CF</span> Amazon product page <span class="admark">paid</span></em>
+    <em><span class="keyi amz">\u25CB</span> Amazon search &mdash; no exact SKU listed</em>
+    <em><span class="keyi ven">\u25CB</span> vendor direct &mdash; earns nothing</em>
+  </div>
+
+  <details>
+    <summary>How these numbers are made, and what they're worth</summary>
+    <p class="note">
+      <b>Decode</b> is memory-bandwidth-bound: <code>tok/s ≈ eff × bandwidth ÷ active-weight-bytes</code>.
+      <code>eff</code> is 0.65 for dense models and 0.42 for MoE (gather overhead and poor locality).
+      Calibrated against two published measurements: M3 Ultra 819&nbsp;GB/s on DeepSeek-R1 671B-A37B&nbsp;Q4
+      lands at ~19&nbsp;tok/s, and DGX Spark 273&nbsp;GB/s on gpt-oss-120B&nbsp;MXFP4 lands at ~39&nbsp;tok/s —
+      both within a few percent of reported figures.
+      <br>
+      <b>Prefill</b> is compute-bound: <code>tok/s ≈ eff × FLOPS ÷ (2 × active params)</code>, with a much
+      lower software-maturity efficiency on non-CUDA stacks (0.35 CUDA, 0.15 Metal, 0.10 ROCm/oneAPI/Tenstorrent).
+      Prefill is the softest number here — it moves 2–3× with the runtime, quantization and kernel.
+      <br>
+      <b>Fit</b> assumes weights × 1.15 for KV cache and activations at moderate context, against 92% of VRAM
+      on discrete cards or 75% of unified memory on Macs (macOS won't hand the GPU all of it by default).
+      <br>
+      <b>Batch 8</b> is not 8× decode: batching amortizes weight reads, so it scales well on high-FLOPS cards
+      and poorly on bandwidth-rich/compute-poor ones. Modelled as decode × min(8, 1 + FLOPS headroom).
+      <br>
+      <b>Prices</b> are typical US street or config prices as of late Aug 2026, cards only where noted —
+      a 5090 or RTX PRO 6000 still needs a CPU, board, PSU and case on top. The 2026 GDDR/DRAM shortage has
+      moved several of these well above launch MSRP, and they keep moving.
+    </p>
+  </details>
+
+  <p class="note">
+    Estimates, not lab certificates. Every number above is a model output, so treat rankings as sound and
+    absolute values as ±30%. Real throughput depends on runtime (llama.cpp / MLX / vLLM / TensorRT-LLM),
+    quantization, context length and thermal headroom.
+  </p>
+
+  <footer class="disclosure">
+    <p><strong>Affiliate disclosure.</strong> As an Amazon Associate I earn from qualifying purchases.
+    Product names in the Machine column and the links marked <span class="admark">paid link</span> are affiliate links: if you buy through one, this site
+    may earn a commission at no additional cost to you. Vendor-direct links (Tenstorrent, NVIDIA) are not
+    affiliate links and earn nothing. Amazon prices and availability shown here were captured 31 Aug 2026 and
+    change constantly &mdash; the price shown on Amazon at the time of purchase is the one that applies.</p>
+    <p>Commissions do not affect what appears here or how it ranks. Every performance figure is produced by the
+    same formula applied to every machine, and products that pay nothing are listed on equal terms alongside
+    products that do.</p>
+  </footer>
+</div>
+
+<script>
+/* ---- machines --------------------------------------------------------
+   mem  = usable accelerator memory in GB
+   bw   = memory bandwidth in GB/s
+   tf   = dense FP16/BF16 tensor TFLOPS
+   eff  = software-maturity multiplier for prefill                      */
+const rows = [
+  { name:"RTX PRO 6000 Blackwell", v:"nvidia", mem:96,  bw:1792, tf:126, power:600, noise:45, cost:15499, note:"GPU only · GDDR7 · $8.5k launch, $15,499 on Amazon today" , buy:{t:"dp", asin:"B0F7Y644FQ", label:"NVD RTX PRO 6000 Blackwell 96GB"} },
+  { name:"RTX 5090",               v:"nvidia", mem:32,  bw:1792, tf:105, power:575, noise:45, cost:4400,  note:"GPU only · median street $4.4–4.7k vs $1,999 MSRP" , buy:{t:"dp", asin:"B0DT7GBNWQ", label:"GIGABYTE RTX 5090 Gaming OC 32G"} },
+  { name:"Mac Studio M5 Ultra",    v:"apple",  mem:512, bw:1200, tf:60,  power:270, noise:35, cost:13500, note:"Complete box · $5,499/96GB · $9,499/256GB · 512GB late Oct, price TBD (~$13.5k est)", star:true , buy:{t:"amz", q:"Apple Mac Studio M5 Ultra", why:"Ultra configs are Apple-direct only"} },
+  { name:"RTX 4090",               v:"nvidia", mem:24,  bw:1008, tf:83,  power:450, noise:45, cost:3499,  note:"GPU only · new $3.5k on Amazon, used ~$2.4k" , buy:{t:"dp", asin:"B0BH8MK76C", label:"GIGABYTE RTX 4090 Gaming OC 24G"} },
+  { name:"RX 7900 XTX",            v:"amd",    mem:24,  bw:960,  tf:61,  power:355, noise:45, cost:1460,  note:"GPU only · new $1.46k on Amazon, used ~$800" , buy:{t:"dp", asin:"B0BTPK5J68", label:"ASRock RX 7900 XTX 24GB"} },
+  { name:"Radeon PRO W7900",       v:"amd",    mem:48,  bw:864,  tf:61,  power:295, noise:40, cost:3899,  note:"GPU only · 48GB, blower, ROCm" , buy:{t:"dp", asin:"B0C5DK4R3G", label:"AMD Radeon PRO W7900 48GB"} },
+  { name:"Mac Studio M3 Ultra",    v:"apple",  mem:512, bw:819,  tf:28,  power:220, noise:40, cost:9499,  note:"Complete box · 512GB config, now prior-gen" , buy:{t:"amz", q:"Apple Mac Studio M3 Ultra", why:"Ultra configs are Apple-direct only"} },
+  { name:"AMD Radeon AI PRO R9700",v:"amd",    mem:32,  bw:640,  tf:48,  power:300, noise:40, cost:1700,  note:"GPU only · 32GB workstation card" , buy:{t:"dp", asin:"B0G1WZMKW6", label:"ASRock R9700 Creator 32GB"} },
+  { name:"MacBook Pro M5 Max",     v:"apple",  mem:128, bw:614,  tf:30,  power:130, noise:45, cost:4500,  note:"Laptop · 16-inch, high memory config" , buy:{t:"dp", asin:"B0GR17WKN3", label:"MBP M5 Max 18-core CPU / 40-core GPU"} },
+  { name:"Tenstorrent Wormhole n300",v:"other",mem:24,  bw:576,  tf:60,  power:300, noise:50, cost:1400,  note:"Add-in card · immature software stack" , buy:{t:"vendor", url:"https://tenstorrent.com/hardware/wormhole", who:"Tenstorrent"} },
+  { name:"Tenstorrent Blackhole p150",v:"other",mem:32, bw:512,  tf:100, power:300, noise:50, cost:1399,  note:"Add-in card · immature software stack" , buy:{t:"vendor", url:"https://tenstorrent.com/hardware/blackhole", who:"Tenstorrent"} },
+  { name:"Intel Arc Pro B70",      v:"intel",  mem:32,  bw:456,  tf:24,  power:190, noise:45, cost:1300,  note:"GPU only · 32GB Xe2-HPG workstation card" , buy:{t:"dp", asin:"B0GXHLFV2G", label:"ASRock Arc Pro B70 Creator 32GB"} },
+  { name:"Arc Pro B60",            v:"intel",  mem:24,  bw:456,  tf:20,  power:120, noise:45, cost:650,   note:"GPU only · 24GB — cheapest capacity per dollar here" , buy:{t:"dp", asin:"B0GVGFW7MB", label:"ASRock Arc Pro B60 Creator 24GB"} },
+  { name:"MacBook Pro M5 Pro",     v:"apple",  mem:64,  bw:307,  tf:15,  power:90,  noise:45, cost:2760,  note:"Laptop · 18-core CPU / 20-core GPU config" , buy:{t:"dp", asin:"B0GR1JKMBV", label:"MBP M5 Pro 18-core CPU / 20-core GPU"} },
+  { name:"DGX Spark",              v:"other",  mem:128, bw:273,  tf:31,  power:140, noise:35, cost:5199,  note:"Complete box · $2,999 announced, $5,199 on Amazon (4TB)" , buy:{t:"dp", asin:"B0GFY25JCR", label:"NVIDIA DGX Spark GB10 · 128GB · 4TB"} },
+  { name:"ASUS Ascent GX10",       v:"other",  mem:128, bw:273,  tf:31,  power:140, noise:35, cost:3999,  note:"Complete box · same GB10 superchip as DGX Spark, $1.2k less", buy:{t:"dp", asin:"B0G1MQYHRD", label:"ASUS Ascent GX10 · GB10 · 128GB"} },
+  { name:"Mac mini M4 Pro",        v:"apple",  mem:48,  bw:273,  tf:8,   power:80,  noise:30, cost:2199,  note:"Complete box · 48GB/512GB, the config Amazon stocks" , buy:{t:"dp", asin:"B0HFTKTFMN", label:"Mac mini M4 Pro 48GB / 512GB"} }
+];
+
+/* ---- workloads: weights GB, active-params GB (at that quant) ---------- */
+const models = [
+  { id:"8b",   label:"8B dense · Q4 (chat, drafts)",        w:4.7,  a:4.7,  ap:8,   moe:false },
+  { id:"32b",  label:"32B dense · Q4 (coding)",             w:19,   a:19,   ap:32,  moe:false },
+  { id:"70b",  label:"70B dense · Q4 (strong general)",     w:40,   a:40,   ap:70,  moe:false },
+  { id:"120b", label:"120B MoE A5B · MXFP4 (gpt-oss class)",w:63,   a:2.9,  ap:5.1, moe:true  },
+  { id:"320b", label:"320B MoE A18B · FP8 (frontier-ish)",  w:320,  a:18,   ap:18,  moe:true  },
+  { id:"671b", label:"671B MoE A37B · Q4 (DeepSeek class)", w:380,  a:18.5, ap:37,  moe:true  }
+];
+
+const AMZ_TAG = "amznbargain-20";
+function buyURL(r){
+  const b = r.buy;
+  if (!b) return null;
+  if (b.t === "vendor") return b.url;
+  if (b.t === "dp") return `https://www.amazon.com/dp/${b.asin}?tag=${AMZ_TAG}&linkCode=ll1&psc=1`;
+  return `https://www.amazon.com/s?k=${encodeURIComponent(b.q)}&tag=${AMZ_TAG}`;
+}
+
+const ICO = {
+  cart: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+    stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2.5 3h2.2l2.3 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.3L20.5 7H6"/>
+    <circle cx="9.5" cy="20" r="1.5"/><circle cx="17.5" cy="20" r="1.5"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+    stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+    <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>`,
+  ext: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+    stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M14 4h6v6"/><path d="M20 4 11 13"/>
+    <path d="M18 14v5a1.8 1.8 0 0 1-1.8 1.8H5.8A1.8 1.8 0 0 1 4 19V8.6A1.8 1.8 0 0 1 5.8 6.8H11"/></svg>`
+};
+
+function buyURL(r){
+  const b = r.buy;
+  if (!b) return null;
+  if (b.t === "vendor") return b.url;
+  if (b.t === "dp") return `https://www.amazon.com/dp/${b.asin}?tag=${AMZ_TAG}&linkCode=ll1&psc=1`;
+  return `https://www.amazon.com/s?k=${encodeURIComponent(b.q)}&tag=${AMZ_TAG}`;
+}
+
+function buyLink(r){
+  const b = r.buy;
+  if (!b) return "";
+  const u = buyURL(r);
+  if (b.t === "vendor")
+    return `<a class="buyi vendor" href="${u}" target="_blank" rel="noopener nofollow"
+      title="Buy direct from ${b.who} — not an affiliate link" aria-label="Buy from ${b.who}">${ICO.ext}</a>`;
+  if (b.t === "dp")
+    return `<a class="buyi wide" href="${u}" target="_blank" rel="noopener nofollow sponsored"
+      title="Amazon (paid link) — ${b.label}" aria-label="Buy ${b.label} on Amazon"
+      >${ICO.cart}<span>amazon</span></a>`;
+  return `<a class="buyi wide search" href="${u}" target="_blank" rel="noopener nofollow sponsored"
+    title="Search Amazon (paid link) — ${b.why || "no exact SKU listed"}"
+    aria-label="Search Amazon for ${r.name}">${ICO.search}<span>amazon</span></a>`;
+}
+
+const SW = { nvidia:0.35, apple:0.15, amd:0.10, intel:0.10, other:0.10 };
+
+let modelId = "320b", sortKey = "decode", sortDir = -1, filter = "all", query = "";
+let yMetric = "decode", showIso = true;
+
+function M(){ return models.find(m => m.id === modelId); }
+
+function derive(r){
+  const m = M();
+  const usable = r.v === "apple" ? r.mem * 0.75 : r.mem * 0.92;
+  const need = m.w * 1.15;
+  const fits = need <= usable;
+  const eff = m.moe ? 0.42 : 0.65;
+  const decode = Math.round(eff * r.bw / m.a);
+  const prefill = Math.round(SW[r.v] * r.tf * 1e12 / (2 * m.ap * 1e9));
+  // batching amortizes weight reads until compute runs out
+  const headroom = Math.max(1, Math.min(8, prefill / Math.max(decode, 1)));
+  const batch = Math.round(decode * (1 + (headroom - 1) * 0.6));
+  return { ...r, fits, usable: Math.round(usable), decode, prefill, batch,
+           perfW: +(decode / r.power * 100).toFixed(1),
+           cps: fits ? Math.round(r.cost / decode) : Infinity,
+           gb$: Math.round(r.cost / r.mem) };
+}
+
+function nameLink(r){
+  const u = buyURL(r);
+  const crown = r.best ? ` <span class="crown">\u265B best value</span>` : "";
+  if (!u) return `<strong>${r.name}</strong>` + crown;
+  const rel = r.buy.t === "vendor" ? "noopener nofollow" : "noopener nofollow sponsored";
+  return `<a class="namelink" href="${u}" target="_blank" rel="${rel}">${r.name}</a>` + crown;
+}
+
+const cols = [
+  ["name","Machine"],["cost","Price"],["mem","Memory"],["bw","BW <u>GB/s</u>"],
+  ["prefill","Prefill <u>t/s</u>"],["decode","Decode <u>t/s</u>"],["batch","Batch-8 <u>t/s</u>"],
+  ["perfW","t/s <u>per 100W</u>"],["fits","Fit"],["cps","$/tok/s"],["noise","<u>dBA</u>"],
+  ["buy","Buy <span class=\"admark\">paid</span>"]
+];
+
+/* ---- product icons ---------------------------------------------------- */
+const VENDOR = {
+  nvidia:{ edge:"#76b900", fan:"#a5e34a", dot:"#76b900" },
+  amd:{ edge:"#ff4d6d", fan:"#ff9ab5", dot:"#ff4d6d" },
+  amdpro:{ edge:"#2f7bff", fan:"#7fb2ff", dot:"#ff4d6d" },
+  intel:{ edge:"#2fc6ff", fan:"#8ee0ff", dot:"#2fc6ff" },
+  apple:{ dot:"#e6eaf0" },
+  other:{ edge:"#9aa7b8", fan:"#cbd5e2", dot:"#c8b46a" }
+};
+function gpuIcon(v,label){
+  const c = VENDOR[v] || VENDOR.other;
+  return `<svg class="ic" viewBox="0 0 44 32" aria-hidden="true">
+    <g stroke="${c.edge}" stroke-width="1.4" fill="none">
+      <path d="M4 6 v20 M4 8 h3 M4 13 h3 M4 18 h3 M4 23 h3"/>
+      <rect x="7" y="4" width="34" height="24" rx="3" fill="#12161f"/>
+      <circle cx="17" cy="16" r="6.5"/><circle cx="32" cy="16" r="4.5"/>
+    </g>
+    <circle cx="17" cy="16" r="2.4" fill="${c.fan}"/><circle cx="32" cy="16" r="1.7" fill="${c.fan}"/>
+    ${label?`<text x="24" y="10" text-anchor="middle" font-size="5" fill="${c.edge}" font-family="ui-sans-serif,system-ui">${label}</text>`:""}
+  </svg>`;
+}
+const studioIcon = () => `<svg class="ic" viewBox="0 0 44 32" aria-hidden="true">
+  <rect x="6" y="9" width="32" height="14" rx="3" fill="#e6eaf0" stroke="#aeb8c6"/>
+  <rect x="6" y="17" width="32" height="6" rx="3" fill="#c8d0da"/>
+  <circle cx="12" cy="20" r="1.3" fill="#8b96a8"/></svg>`;
+const miniIcon = () => `<svg class="ic" viewBox="0 0 44 32" aria-hidden="true">
+  <rect x="8" y="12" width="28" height="9" rx="3" fill="#e6eaf0" stroke="#aeb8c6"/>
+  <circle cx="13" cy="16.5" r="1.2" fill="#8b96a8"/></svg>`;
+const laptopIcon = () => `<svg class="ic" viewBox="0 0 44 32" aria-hidden="true">
+  <defs><linearGradient id="scr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#5b7cff"/><stop offset=".5" stop-color="#a76bff"/><stop offset="1" stop-color="#3ee0ff"/>
+  </linearGradient></defs>
+  <rect x="9" y="5" width="26" height="17" rx="2" fill="#1d2740" stroke="#aeb8c6"/>
+  <rect x="11" y="7" width="22" height="13" rx="1" fill="url(#scr)"/>
+  <path d="M5 24 h34 a2 2 0 0 1 -2 3 H7 a2 2 0 0 1 -2 -3 z" fill="#d5dbe4"/></svg>`;
+const chipIcon = () => `<svg class="ic" viewBox="0 0 44 32" aria-hidden="true">
+  <g stroke="#9aa7b8" stroke-width="1.2" fill="none">
+    <rect x="12" y="8" width="20" height="16" rx="2" fill="#12161f"/>
+    <path d="M16 8 V5 M22 8 V5 M28 8 V5 M16 24 v3 M22 24 v3 M28 24 v3"/></g>
+  <text x="22" y="19" text-anchor="middle" font-size="8" fill="#cbd5e2" font-family="ui-sans-serif,system-ui">AI</text></svg>`;
+const sparkIcon = () => `<svg class="ic" viewBox="0 0 44 32" aria-hidden="true">
+  <rect x="10" y="6" width="24" height="20" rx="4" fill="#c8b46a" stroke="#8e7c3f"/>
+  <g fill="#8e7c3f" opacity=".55">
+    <circle cx="16" cy="12" r="1"/><circle cx="22" cy="12" r="1"/><circle cx="28" cy="12" r="1"/>
+    <circle cx="16" cy="17" r="1"/><circle cx="22" cy="17" r="1"/><circle cx="28" cy="17" r="1"/>
+    <circle cx="16" cy="22" r="1"/><circle cx="22" cy="22" r="1"/><circle cx="28" cy="22" r="1"/></g></svg>`;
+
+function iconFor(n){
+  if (/^RTX/.test(n)) return gpuIcon("nvidia");
+  if (/Radeon PRO|AI PRO/.test(n)) return gpuIcon("amdpro", /AI PRO/.test(n) ? "AMD" : "PRO");
+  if (/^RX /.test(n)) return gpuIcon("amd");
+  if (/Arc Pro/.test(n)) return gpuIcon("intel","A");
+  if (/Tenstorrent/.test(n)) return chipIcon();
+  if (/DGX Spark/.test(n)) return sparkIcon();
+  if (/Mac Studio/.test(n)) return studioIcon();
+  if (/Mac mini/.test(n)) return miniIcon();
+  if (/MacBook/.test(n)) return laptopIcon();
+  return chipIcon();
+}
+
+/* ---- rendering -------------------------------------------------------- */
+const money = n => "$" + n.toLocaleString("en-US");
+const short = n => n >= 1000 ? (n/1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n);
+
+function bestValueName(){
+  const fit = rows.map(derive).filter(r => r.fits);
+  if (!fit.length) return null;
+  return fit.reduce((a,b) => b.cps < a.cps ? b : a).name;
+}
+
+function visible(){
+  const best = bestValueName();
+  return rows.map(derive).map(r => ({ ...r, best: r.name === best })).filter(r => {
+    if (query && !r.name.toLowerCase().includes(query)) return false;
+    if (filter === "fit" && !r.fits) return false;
+    if (filter === "quiet" && r.noise > 40) return false;
+    if (filter === "cheap" && r.cost >= 3000) return false;
+    return true;
+  }).sort((a,b) => {
+    const A = a[sortKey], B = b[sortKey];
+    if (A === B) return 0;
+    return (A > B ? 1 : -1) * sortDir;
+  });
+}
+
+function render(){
+  const data = visible(), m = M();
+  document.querySelector("thead").innerHTML = "<tr>" + cols.map(([k,l]) =>
+    `<th data-k="${k}">${l}${sortKey===k ? (sortDir===1?" ↑":" ↓") : ""}</th>`).join("") + "</tr>";
+  document.querySelector("tbody").innerHTML = data.map(r => `
+    <tr class="${r.best?"star ":""}${r.fits?"":"nofit"}">
+      <td><div class="mach">${iconFor(r.name)}<div>${nameLink(r)}
+        <div class="rnote">${r.note}</div></div></div></td>
+      <td>${money(r.cost)}${r.live?'<span class="livedot" title="Live price from Amazon Product Advertising API"></span>':''}<span class="bar"><i style="width:${Math.min(100, r.cost/170)}%"></i></span>
+        <div class="rnote">${money(r.gb$)}/GB</div></td>
+      <td>${r.mem} GB<div class="rnote">~${r.usable} usable</div></td>
+      <td>${short(r.bw)}</td>
+      <td>${short(r.prefill)}</td>
+      <td><strong>${r.decode}</strong></td>
+      <td>${r.batch}</td>
+      <td>${r.perfW}</td>
+      <td class="${r.fits?"fit-yes":"fit-no"}">${r.fits ? "Yes" : "No"}</td>
+      <td>${r.fits ? money(r.cps) : "—"}</td>
+      <td>${r.noise}</td>
+      <td>${buyLink(r)}</td>
+    </tr>`).join("");
+
+  const all = rows.map(derive), fit = all.filter(r => r.fits);
+  const cheapest = [...fit].sort((a,b) => a.cost - b.cost)[0];
+  const fastest  = [...fit].sort((a,b) => b.decode - a.decode)[0];
+  const value    = [...fit].sort((a,b) => a.cps - b.cps)[0];
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi"><span>Machines that fit ${m.ap}B active / ${m.w}GB</span><b>${fit.length} of ${all.length}</b></div>
+    <div class="kpi"><span>Cheapest that fits</span><b>${cheapest ? cheapest.name + " · " + money(cheapest.cost) : "none"}</b></div>
+    <div class="kpi"><span>Fastest decode that fits</span><b>${fastest ? fastest.name + " · " + fastest.decode + " t/s" : "none"}</b></div>
+    <div class="kpi"><span>Best $/tok/s \u265B crowned in table</span><b>${value ? value.name + " · " + money(value.cps) : "none"}</b></div>`;
+  draw(data);
+}
+
+/* ---- chart: log-log, gridded, dodged labels, iso-value guides ---------- */
+function C(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function palette(){
+  return { grid:C("--grid"), tick:C("--faint"), iso:C("--iso"), isofg:C("--isofg"),
+           axis:C("--muted"), label:C("--text2"), dim:C("--faint"), accent:C("--accent"),
+           v:{ nvidia:C("--v-nvidia"), amd:C("--v-amd"), intel:C("--v-intel"),
+               apple:C("--v-apple"), other:C("--v-other") } };
+}
+
+const YLABEL = { decode:"Decode tok/s", batch:"Batch-8 tok/s", prefill:"Prefill tok/s", perfW:"Decode tok/s per 100 W" };
+let pts = [];
+
+function logTicks(min, max){
+  const out = [];
+  for (let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++)
+    for (const m of [1,2,5]) { const v = m * 10**e; if (v >= min && v <= max) out.push(v); }
+  return out;
+}
+
+function draw(data){
+  const c = document.getElementById("plot"), x = c.getContext("2d");
+  const dpr = devicePixelRatio || 1, W = c.clientWidth, H = 420;
+  c.width = W * dpr; c.height = H * dpr;
+  x.setTransform(dpr,0,0,dpr,0,0);
+  x.clearRect(0,0,W,H);
+  if (!data.length) return;
+  const P = palette();
+
+  const L = 62, R = 24, T = 22, B = 46;
+  const xs = data.map(r => r.cost), ys = data.map(r => Math.max(r[yMetric], 0.1));
+  const x0 = Math.min(...xs)/1.35, x1 = Math.max(...xs)*1.35;
+  const y0 = Math.min(...ys)/1.6,  y1 = Math.max(...ys)*1.6;
+  const px = v => L + (Math.log10(v)-Math.log10(x0)) / (Math.log10(x1)-Math.log10(x0)) * (W-L-R);
+  const py = v => H-B - (Math.log10(Math.max(v,0.1))-Math.log10(y0)) / (Math.log10(y1)-Math.log10(y0)) * (H-T-B);
+
+  // grid + ticks
+  x.font = '11px ' + C("--font");
+  x.textBaseline = "middle";
+  logTicks(x0,x1).forEach(v => {
+    const X = px(v);
+    x.strokeStyle = P.grid; x.beginPath(); x.moveTo(X,T); x.lineTo(X,H-B); x.stroke();
+    x.fillStyle = P.tick; x.textAlign = "center";
+    x.fillText("$" + short(v), X, H-B+16);
+  });
+  logTicks(y0,y1).forEach(v => {
+    const Y = py(v);
+    x.strokeStyle = P.grid; x.beginPath(); x.moveTo(L,Y); x.lineTo(W-R,Y); x.stroke();
+    x.fillStyle = P.tick; x.textAlign = "right";
+    x.fillText(short(v), L-8, Y);
+  });
+
+  // iso $/tok-s diagonals (straight lines on log-log)
+  if (showIso && yMetric !== "perfW") {
+    [5,20,100,500].forEach(k => {
+      x.strokeStyle = P.iso; x.setLineDash([4,4]); x.beginPath();
+      x.moveTo(px(x0), py(x0/k)); x.lineTo(px(x1), py(x1/k)); x.stroke(); x.setLineDash([]);
+      const lx = px(x1) - 6, ly = py(x1/k);
+      if (ly > T && ly < H-B) {
+        x.fillStyle = P.isofg; x.textAlign = "right";
+        x.fillText("$" + k + "/tok/s", lx, ly - 8);
+      }
+    });
+  }
+
+  // axis titles
+  x.fillStyle = P.axis; x.textAlign = "left";
+  x.fillText(YLABEL[yMetric] + " ↑ (log)", L, T - 8);
+  x.textAlign = "right"; x.fillText("Typical price → (log)", W-R, H-10);
+
+  // points, biggest first so small ones stay clickable
+  pts = data.map(r => ({ r, X: px(r.cost), Y: py(r[yMetric]),
+                         rad: 4 + Math.sqrt(r.mem) * 0.55 }));
+
+  // label placement: try offsets, keep the first non-overlapping one
+  const placed = [];
+  const hits = (a) => placed.some(b => !(a.x2 < b.x1 || a.x1 > b.x2 || a.y2 < b.y1 || a.y1 > b.y2));
+  const ordered = [...pts].sort((a,b) => b.r.mem - a.r.mem);
+
+  ordered.forEach(p => {
+    const t = p.r.name.replace("Mac Studio ","").replace("MacBook Pro ","MBP ")
+                      .replace("Tenstorrent ","").replace(" Blackwell","");
+    const w = x.measureText(t).width;
+    const cands = [[p.rad+6,4],[-(w+p.rad+6),4],[p.rad+6,-10],[-(w+p.rad+6),-10],
+                   [-w/2,-p.rad-8],[-w/2,p.rad+14],[p.rad+6,16],[-(w+p.rad+6),16]];
+    let box = null;
+    for (const [dx,dy] of cands) {
+      const b = { x1:p.X+dx-2, x2:p.X+dx+w+2, y1:p.Y+dy-9, y2:p.Y+dy+3 };
+      if (b.x1 < L || b.x2 > W-R || b.y1 < T || b.y2 > H-B) continue;
+      if (!hits(b)) { box = { b, dx, dy }; break; }
+    }
+    p.label = box ? { t, ...box } : null;
+    if (box) placed.push(box.b);
+  });
+
+  ordered.forEach(p => {
+    const col = P.v[p.r.v] || P.v.other;
+    x.beginPath(); x.arc(p.X, p.Y, p.rad, 0, Math.PI*2);
+    if (p.r.fits) { x.fillStyle = col; x.globalAlpha = p.r.best ? 1 : .85; x.fill(); x.globalAlpha = 1; }
+    else { x.strokeStyle = col; x.globalAlpha = .55; x.lineWidth = 1.6; x.stroke(); x.globalAlpha = 1; }
+    if (p.r.best) { x.strokeStyle = P.accent; x.lineWidth = 2;
+      x.beginPath(); x.arc(p.X, p.Y, p.rad+4, 0, Math.PI*2); x.stroke(); }
+    if (p.label) {
+      x.textAlign = "left";
+      x.fillStyle = p.r.fits ? P.label : P.dim;
+      x.fillText(p.label.t, p.X + p.label.dx, p.Y + p.label.dy);
+    }
+  });
+}
+
+/* ---- tooltip ---------------------------------------------------------- */
+const tip = document.getElementById("tip"), plot = document.getElementById("plot");
+plot.addEventListener("mousemove", e => {
+  const b = plot.getBoundingClientRect(), mx = e.clientX-b.left, my = e.clientY-b.top;
+  const hit = pts.find(p => Math.hypot(p.X-mx, p.Y-my) <= p.rad + 6);
+  if (!hit) { tip.style.opacity = 0; return; }
+  const r = hit.r;
+  tip.innerHTML = `<b>${r.name}</b>
+    <i>${money(r.cost)} · ${r.mem} GB · ${short(r.bw)} GB/s · ${r.power} W</i><br>
+    decode <strong>${r.decode}</strong> t/s · batch-8 ${r.batch} t/s<br>
+    prefill ~${short(r.prefill)} t/s · ${r.perfW} t/s per 100 W<br>
+    ${r.fits ? `fits · ${money(r.cps)} per tok/s` : `<span style="color:#ff6b8a">doesn't fit this model</span>`}`;
+  tip.style.opacity = 1;
+  tip.style.left = Math.min(hit.X + 14, plot.clientWidth - 250) + "px";
+  tip.style.top  = Math.max(hit.Y - 40, 4) + "px";
+});
+plot.addEventListener("mouseleave", () => tip.style.opacity = 0);
+
+/* ---- wiring ----------------------------------------------------------- */
+document.getElementById("model").innerHTML =
+  models.map(m => `<option value="${m.id}"${m.id===modelId?" selected":""}>${m.label}</option>`).join("");
+document.getElementById("model").onchange = e => { modelId = e.target.value; render(); };
+document.getElementById("ymetric").onchange = e => { yMetric = e.target.value; render(); };
+document.getElementById("isoBtn").onclick = e => {
+  showIso = !showIso; e.target.classList.toggle("active", showIso); render();
+};
+document.querySelector("table").addEventListener("click", e => {
+  const th = e.target.closest("th"); if (!th) return;
+  const k = th.dataset.k; if (k === "buy") return;
+  sortDir = sortKey === k ? -sortDir : (k === "name" ? 1 : -1);
+  sortKey = k; render();
+});
+document.getElementById("q").addEventListener("input", e => { query = e.target.value.toLowerCase(); render(); });
+document.querySelectorAll(".chip[data-f]").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".chip[data-f]").forEach(x => x.classList.remove("active"));
+  b.classList.add("active"); filter = b.dataset.f; render();
+});
+/* ---- themes ---------------------------------------------------------- */
+const THEMES = ["dark","light","matrix"];
+function setTheme(t){
+  if (!THEMES.includes(t)) t = "dark";
+  document.documentElement.setAttribute("data-theme", t);
+  document.querySelectorAll(".themebar button").forEach(b =>
+    b.classList.toggle("on", b.dataset.theme === t));
+  try { localStorage.setItem("llmiron-theme", t); } catch(e) {}
+  rain.running = (t === "matrix");
+  if (rain.running) rain.start(); else rain.stop();
+  requestAnimationFrame(() => draw(visible()));   // repaint canvas in new palette
+}
+document.querySelectorAll(".themebar button").forEach(b =>
+  b.onclick = () => setTheme(b.dataset.theme));
+
+/* ---- matrix rain ------------------------------------------------------ */
+const rain = (() => {
+  const c = document.getElementById("rain"), x = c.getContext("2d");
+  const GLYPHS = "01\u30A2\u30AB\u30B5\u30BF\u30CA\u30CF\u30DE\u30E4\u30E9\u30EF" +
+                 "\u30F2\u30F3ABCDEF0123456789$GBTFLOPS";
+  let cols = [], size = 15, raf = 0, running = false, last = 0;
+  function fit(){
+    c.width = innerWidth; c.height = innerHeight;
+    cols = Array.from({length: Math.ceil(c.width / size)},
+      () => -Math.random() * c.height / size);
+  }
+  function frame(t){
+    if (!running) return;
+    raf = requestAnimationFrame(frame);
+    if (t - last < 55) return;                 // throttle to ~18fps
+    last = t;
+    x.fillStyle = "rgba(0,4,0,0.09)";
+    x.fillRect(0,0,c.width,c.height);
+    x.font = size + "px ui-monospace, monospace";
+    for (let i = 0; i < cols.length; i++) {
+      const ch = GLYPHS[(Math.random()*GLYPHS.length)|0];
+      const y = cols[i] * size;
+      x.fillStyle = Math.random() > 0.975 ? "#c6ffd6" : "#22aa4d";
+      x.fillText(ch, i * size, y);
+      cols[i] = (y > c.height && Math.random() > 0.972) ? 0 : cols[i] + 1;
+    }
+  }
+  addEventListener("resize", () => { if (running) fit(); });
+  return {
+    set running(v){ running = v; },
+    get running(){ return running; },
+    start(){ if (raf) return; fit(); running = true; raf = requestAnimationFrame(frame); },
+    stop(){ running = false; cancelAnimationFrame(raf); raf = 0; x.clearRect(0,0,c.width,c.height); }
+  };
+})();
+
+let saved = "dark";
+try { saved = localStorage.getItem("llmiron-theme") || "dark"; } catch(e) {}
+setTheme(saved);
+
+/* ---- live prices from data/prices.json (written by tools/paapi-fetch.mjs) --
+   Absent or unreachable (e.g. opened over file://), the static prices stand. */
+async function loadLivePrices(){
+  const stamp = document.getElementById("pricestamp");
+  let doc;
+  try {
+    const res = await fetch("data/prices.json", { cache: "no-store" });
+    if (!res.ok) return;
+    doc = await res.json();
+  } catch (e) { return; }
+  if (!doc || !doc.items) return;
+
+  let n = 0;
+  for (const row of rows) {
+    const a = row.buy && row.buy.asin;
+    if (!a) continue;
+    const it = doc.items[a];
+    if (!it || it.price == null) continue;
+    row.cost = Math.round(it.price);
+    row.live = true;
+    if (it.availability) row.note = row.note.replace(/ · live:.*$/, "") + " · live: " + it.availability;
+    n++;
+  }
+  if (!n) return;
+
+  // PA-API terms: cached prices must be refreshed at least every 24h.
+  const age = (Date.now() - new Date(doc.fetchedAt)) / 36e5;
+  const when = new Date(doc.fetchedAt).toLocaleString("en-US",
+    { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
+  stamp.className = age > 24 ? "stale" : "live";
+  stamp.textContent = (age > 24 ? "\u26A0 stale \u00B7 " : "\u25CF live \u00B7 ")
+    + n + " prices \u00B7 " + when;
+  stamp.title = age > 24
+    ? "Older than 24h — re-run tools/paapi-fetch.mjs"
+    : "Live from Amazon Product Advertising API";
+  render();
+}
+
+addEventListener("resize", () => draw(visible()));
+render();
+loadLivePrices();
+</script>
+</body>
+</html>
