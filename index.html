@@ -116,24 +116,27 @@
   .keyi { font-size: 13px; margin-right: 2px; }
   .keyi.amz { color: var(--buyfg); }
   .keyi.ven { color: var(--muted); }
-  .themebar { display: flex; gap: 6px; }
-  #pricestamp { margin-left: auto; }
+  .topright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .themebar { display: flex; gap: 3px; padding: 3px; border-radius: 999px;
+    background: var(--chip); border: 1px solid var(--line); }
   .themebar button {
-    padding: 8px 12px; border-radius: 999px; font-size: 12px; background: var(--chip);
-    border: 1px solid var(--line); color: var(--muted); cursor: pointer;
+    width: 28px; height: 26px; padding: 0; border-radius: 999px; font-size: 13px;
+    line-height: 1; background: transparent; border: none; color: var(--muted); cursor: pointer;
   }
-  .themebar button.on { background: var(--chipon); border-color: var(--accent); color: var(--accent); box-shadow: var(--glow); }
+  .themebar button.on { background: var(--chipon); color: var(--accent); box-shadow: var(--glow); }
+  #pricestamp { font-size: 11px; }
   #rain { position: fixed; inset: 0; z-index: -1; pointer-events: none; display: none; opacity: .45; }
   :root[data-theme="matrix"] #rain { display: block; }
   :root[data-theme="matrix"] h1 { text-shadow: 0 0 18px #39ff6a66; }
   :root[data-theme="matrix"] .kpi b { text-shadow: 0 0 14px #39ff6a55; }
   :root[data-theme="matrix"] th { text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+  .nameline { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .crown {
-    display: inline-block; margin-left: 7px; padding: 1px 7px; border-radius: 999px;
-    font-size: 9.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-    color: var(--bg); background: linear-gradient(90deg, var(--warn), var(--accent));
-    box-shadow: var(--glow);
-    vertical-align: middle; white-space: nowrap;
+    flex: 0 0 auto; width: 18px; height: 18px; border-radius: 99px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; line-height: 1; color: #1a1204;
+    background: linear-gradient(135deg, #ffe9a3, var(--warn));
+    box-shadow: 0 0 10px var(--warn); cursor: help;
   }
   .namelink {
     font-weight: 700; color: var(--text); text-decoration: none;
@@ -142,10 +145,10 @@
   .namelink:hover { color: var(--accent); border-bottom-color: var(--accent); }
   .mach { display: flex; align-items: center; gap: 9px; min-width: 0; }
   .mach > div { min-width: 0; }
-  td:first-child, th:first-child { max-width: 230px; width: 230px; }
-  .namelink { display: inline-block; max-width: 158px; overflow: hidden;
+  td:first-child, th:first-child { max-width: 236px; width: 236px; }
+  .namelink { display: block; flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
-  .rnote { max-width: 192px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rnote { max-width: 198px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ic { flex: 0 0 auto; width: 36px; height: 28px; display: block; filter: var(--icfilter); }
   .buyi {
     display: inline-flex; align-items: center; justify-content: center; gap: 5px;
@@ -210,11 +213,13 @@
   <button class="chip" data-f="fit">Fits the model</button>
   <button class="chip" data-f="quiet">Quiet desk</button>
   <button class="chip" data-f="cheap">Under $3k</button>
-  <span id="pricestamp">static prices &middot; 31 Aug 2026</span>
+  <div class="topright">
+  <span id="pricestamp" title="Prices captured by hand; the price bot switches this to live">prices &middot; 31 Aug 2026</span>
   <div class="themebar" role="group" aria-label="Theme">
-    <button data-theme="dark"   title="Dark">◐ Dark</button>
-    <button data-theme="light"  title="Light">☀ Light</button>
-    <button data-theme="matrix" title="Matrix">▓ Matrix</button>
+    <button data-theme="dark"   title="Dark theme"   aria-label="Dark theme">◐</button>
+    <button data-theme="light"  title="Light theme"  aria-label="Light theme">☀</button>
+    <button data-theme="matrix" title="Matrix theme" aria-label="Matrix theme">▓</button>
+  </div>
   </div>
 </div>
 
@@ -249,9 +254,10 @@
   </div>
 
   <div class="legend" style="margin-top:6px">
-    <em><span class="keyi amz">\u25CF</span> Amazon product page <span class="admark">paid</span></em>
-    <em><span class="keyi amz">\u25CB</span> Amazon search &mdash; no exact SKU listed</em>
-    <em><span class="keyi ven">\u25CB</span> vendor direct &mdash; earns nothing</em>
+    <em><span class="crown" style="cursor:default">♛</span> best value for the selected model</em>
+    <em><span class="keyi amz">●</span> amazon = product page <span class="admark">paid</span></em>
+    <em><span class="keyi amz">○</span> grey amazon = search, no exact SKU</em>
+    <em><span class="keyi ven">○</span> vendor direct &mdash; earns nothing</em>
   </div>
 
   <details>
@@ -406,10 +412,10 @@ function derive(r){
 
 function nameLink(r){
   const u = buyURL(r);
-  const crown = r.best ? ` <span class="crown">\u265B best value</span>` : "";
-  if (!u) return `<strong>${r.name}</strong>` + crown;
+  const crown = r.best ? `<span class="crown" title="Best value: lowest cost per decoded token/s of any machine that fits this model">♛</span>` : "";
+  if (!u) return `<div class="nameline"><strong>${r.name}</strong>${crown}</div>`;
   const rel = r.buy.t === "vendor" ? "noopener nofollow" : "noopener nofollow sponsored";
-  return `<a class="namelink" href="${u}" target="_blank" rel="${rel}">${r.name}</a>` + crown;
+  return `<div class="nameline"><a class="namelink" href="${u}" target="_blank" rel="${rel}">${r.name}</a>${crown}</div>`;
 }
 
 const cols = [
@@ -769,7 +775,7 @@ async function loadLivePrices(){
   const when = new Date(doc.fetchedAt).toLocaleString("en-US",
     { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
   stamp.className = age > 24 ? "stale" : "live";
-  stamp.textContent = (age > 24 ? "\u26A0 stale \u00B7 " : "\u25CF live \u00B7 ")
+  stamp.textContent = (age > 24 ? "\u26A0 stale \u00B7 " : "● live \u00B7 ")
     + n + " prices \u00B7 " + when;
   stamp.title = age > 24
     ? "Older than 24h — re-run tools/paapi-fetch.mjs"
