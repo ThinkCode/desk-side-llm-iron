@@ -104,7 +104,7 @@
   th u { text-decoration: none; color: var(--faint); font-weight: 400; font-size: 10px; }
   td:nth-child(n+4):nth-child(-n+11), th:nth-child(n+4):nth-child(-n+11) { text-align: right; }
   .bar { width: 44px; }
-  td:last-child, th:last-child { width: 92px; text-align: center; }
+  td:last-child, th:last-child { width: 54px; text-align: center; }
   th .admark { margin-left: 0; display: block; margin-top: 3px; }
   .livedot {
     display: inline-block; width: 6px; height: 6px; border-radius: 99px; margin-left: 4px;
@@ -145,10 +145,10 @@
   .namelink:hover { color: var(--accent); border-bottom-color: var(--accent); }
   .mach { display: flex; align-items: center; gap: 9px; min-width: 0; }
   .mach > div { min-width: 0; }
-  td:first-child, th:first-child { max-width: 236px; width: 236px; }
+  td:first-child, th:first-child { max-width: 274px; width: 274px; }
   .namelink { display: block; flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
-  .rnote { max-width: 198px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rnote { max-width: 236px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ic { flex: 0 0 auto; width: 36px; height: 28px; display: block; filter: var(--icfilter); }
   .buyi {
     display: inline-flex; align-items: center; justify-content: center; gap: 5px;
@@ -156,8 +156,6 @@
     background: var(--buybg); border: 1px solid var(--buyline); color: var(--buyfg);
     transition: transform .15s, box-shadow .15s, border-color .15s;
   }
-  .buyi.wide { width: auto; padding: 0 9px; }
-  .buyi.wide span { font-size: 11.5px; font-weight: 600; letter-spacing: -.01em; }
   .buyi:hover { transform: translateY(-1px); box-shadow: var(--glow); filter: brightness(1.2); }
   .buyi.vendor, .buyi.search { background: var(--chip); border-color: var(--line); color: var(--muted); }
   .buyi.vendor:hover, .buyi.search:hover { border-color: var(--accent); color: var(--accent); }
@@ -255,9 +253,9 @@
 
   <div class="legend" style="margin-top:6px">
     <em><span class="crown" style="cursor:default">♛</span> best value for the selected model</em>
-    <em><span class="keyi amz">●</span> amazon = product page <span class="admark">paid</span></em>
-    <em><span class="keyi amz">○</span> grey amazon = search, no exact SKU</em>
-    <em><span class="keyi ven">○</span> vendor direct &mdash; earns nothing</em>
+    <em><span class="keyi amz">🛒</span> cart = Amazon product page <span class="admark">paid</span></em>
+    <em><span class="keyi ven">🔍</span> magnifier = Amazon search, no exact SKU</em>
+    <em><span class="keyi ven">↗</span> arrow = vendor direct, earns nothing</em>
   </div>
 
   <details>
@@ -378,12 +376,12 @@ function buyLink(r){
     return `<a class="buyi vendor" href="${u}" target="_blank" rel="noopener nofollow"
       title="Buy direct from ${b.who} — not an affiliate link" aria-label="Buy from ${b.who}">${ICO.ext}</a>`;
   if (b.t === "dp")
-    return `<a class="buyi wide" href="${u}" target="_blank" rel="noopener nofollow sponsored"
+    return `<a class="buyi" href="${u}" target="_blank" rel="noopener nofollow sponsored"
       title="Amazon (paid link) — ${b.label}" aria-label="Buy ${b.label} on Amazon"
-      >${ICO.cart}<span>amazon</span></a>`;
-  return `<a class="buyi wide search" href="${u}" target="_blank" rel="noopener nofollow sponsored"
+      >${ICO.cart}</a>`;
+  return `<a class="buyi search" href="${u}" target="_blank" rel="noopener nofollow sponsored"
     title="Search Amazon (paid link) — ${b.why || "no exact SKU listed"}"
-    aria-label="Search Amazon for ${r.name}">${ICO.search}<span>amazon</span></a>`;
+    aria-label="Search Amazon for ${r.name}">${ICO.search}</a>`;
 }
 
 const SW = { nvidia:0.35, apple:0.15, amd:0.10, intel:0.10, other:0.10 };
